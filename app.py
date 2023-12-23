@@ -44,7 +44,8 @@ conversation_state: Dict[str, list] = {}
 @app.post("/request_chat")
 def request_assistant():
     assistant = client.beta.assistants.retrieve(ASSISTANT_ID)
-    # take picture -> compare picture -> retrieve client id and chat, make it all inside image_processing function and folder.
+    assistant_instructions = assistant.instructions
+    # take picture -> compare picture -> retrieve user id and chat, make it all inside image_processing function and folder.
 
     # # example: check_user_id + retrieve history
     user_id = "1"
@@ -54,32 +55,34 @@ def request_assistant():
 
     conversation = conversation_state[user_id]
     if conversation == []:
-        instructions = None
+        user_instructions = None
+
     else:
-        instructions = conversation
+        user_instructions = conversation
+        assistant_instructions = assistant_instructions + " Found Conversation History: " + user_instructions
+
+    AssistantInteractionObject = text_generation.AssistantInteraction(client, ASSISTANT_ID)
 
     while True:
         prompt = speech2text.getPrompt()
-        
-        thread, run, message = text_generation.create_thread_and_run(user_input=prompt, assistant_id=ASSISTANT_ID, instructions=instructions)
-        run = text_generation.wait_on_run(run, thread, ASSISTANT_ID); response = text_generation.get_response(thread, message);
+        print(prompt)
+        if any(command.lower() in prompt.strip().lower() for command in exit_commands) or (prompt.strip().lower() is None):
+            break
+
+        AssistantInteractionObject.create_thread_and_run(user_input=prompt, user_instructions=assistant_instructions)
+        response = AssistantInteractionObject.get_response()
         utils.pretty_print(response)
         for msg in response.data:
             role = msg.role
-            if role == 'assistant':
-                response = msg.content[0].text.value
+            response = msg.content[0].text.value
+            if role == 'assistant': 
+                # Check state and emotion between 1,2,3,4 and sent it in API
                 text2speech.convert2speech(response)
-                temp_dict = {role: response}
 
-            elif role == 'user':
-                user_prompt = msg.content[0].text.value
-                if any(command in user_prompt for command in exit_commands) or not user_prompt:
-                    return {"conversation": conversation}
-                
-                temp_dict = {role: user_prompt}
-
+            temp_dict = {role: response}
             conversation.append(temp_dict)
 
-    
+    # Update the chat of the user
+    return {"conversation": conversation}
         
 

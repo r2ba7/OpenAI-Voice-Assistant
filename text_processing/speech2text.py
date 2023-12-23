@@ -10,7 +10,6 @@ def getPrompt():
     with microphone as source:
         audio = recognizer.listen(source)
 
-    
     print("Finished recording.")
     buffer = io.BytesIO(audio.get_wav_data()); buffer.name = 'test.wav';
     
