@@ -39,8 +39,6 @@ def upload_files2assitant(delete_files_request: DeleteFilesRequest):
     adjust_assistant.delete_files(ASSISTANT_ID, delete_files_request.file_ids)
 
 
-
-conversation_state: Dict[str, list] = {} 
 @app.post("/request_chat")
 def request_assistant():
     assistant = client.beta.assistants.retrieve(ASSISTANT_ID)
@@ -49,7 +47,9 @@ def request_assistant():
 
     # # example: check_user_id + retrieve history
     user_id = "1"
-    exit_commands = ['Exit', 'اخرج', 'exit', 'أخرج', 'اخرج', 'انهاء', 'end']
+    
+    conversation_state: Dict[str, list] = {}
+    
     if user_id not in conversation_state:
         conversation_state[user_id] = []
 
@@ -62,9 +62,22 @@ def request_assistant():
         assistant_instructions = assistant_instructions + " Found Conversation History: " + user_instructions
 
     AssistantInteractionObject = text_generation.AssistantInteraction(client, ASSISTANT_ID)
-
+    
+    exit_commands = ['اخرج', 'exit', 'أخرج', 'اخرج', 'انهاء', 'end']
+    language = None
     while True:
-        prompt = speech2text.getPrompt()
+        print(language)
+        if language is not None:
+            prompt, _ = speech2text.getPrompt(language)
+
+        else:
+            prompt, language = speech2text.getPrompt(language)
+            if language == 'arabic':
+                language='ar'
+
+            else:
+                language='en'
+
         print(prompt)
         if any(command.lower() in prompt.strip().lower() for command in exit_commands) or (prompt.strip().lower() is None):
             break

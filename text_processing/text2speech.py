@@ -1,4 +1,4 @@
-import re, os, requests, json, openai, io, pygame
+import io, pygame
 import pandas as pd, numpy as np, warnings
 from etl.authentications import *
 
@@ -7,18 +7,20 @@ def convert2speech(message):
         model="tts-1",
         voice="alloy",
         response_format="opus",
-        input=message,  
+        input=message,
     )
-    with io.BytesIO(response.content) as audio_stream:
-        # Initialize Pygame
-        pygame.mixer.init()
-
-        # Load the audio stream
-        pygame.mixer.music.load(audio_stream)
-
-        # Play the audio
-        pygame.mixer.music.play()
-
-        # Keep the program running while the audio plays
-        while pygame.mixer.music.get_busy():
-            pygame.time.delay(50)
+    
+    audio_stream = io.BytesIO(response.content)
+    
+    # Initialize Pygame
+    pygame.mixer.init()
+    
+    # Create a Pygame sound object from the audio stream
+    sound = pygame.mixer.Sound(audio_stream)
+    
+    # Play the audio
+    sound.play()
+    
+    # Wait for the audio to finish playing
+    while pygame.mixer.get_busy():
+        pygame.time.delay(50)
