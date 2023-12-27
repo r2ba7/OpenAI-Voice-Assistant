@@ -1,14 +1,26 @@
-from pymongo import MongoClient
+import os
 from dotenv import load_dotenv
+
+import openai
+from pymongo import MongoClient
 from openai import OpenAI
-import os, openai
+from tavily import TavilyClient
 
 load_dotenv()
+
 dbconnection = os.environ.get("dbconnection")
 dbname = os.environ.get("dbname")
-openai.api_key = os.environ.get("openai_api_key")
+
+OPENAI_API_KEY = os.environ.get("openai_api_key")
 ASSISTANT_ID = os.environ.get("openai_assistant_id")
-client = OpenAI()
+
+TAVILY_API_KEY = os.environ.get("tavily_api_key")
+
+
+
+
+client = OpenAI(api_key=OPENAI_API_KEY)
+tavily_client = TavilyClient(api_key=TAVILY_API_KEY)
 
 def connect_to_database(connection_string: str=dbconnection, 
                         db_name: str=dbname):

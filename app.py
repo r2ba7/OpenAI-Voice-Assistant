@@ -1,17 +1,18 @@
 from text_processing import text_generation, text2speech, speech2text
-from utils import utils
+from utils import general_utils
 from etl.authentications import *
 from api_edit import adjust_assistant
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-import asyncio
+import asyncio, json
 
 from datetime import datetime
 from openai import OpenAI
 from typing import Dict
 
 app = FastAPI()
+logger = general_utils.get_logger(__name__)
 
 # TO RUN: python -m uvicorn app:app --reload
 
@@ -28,11 +29,9 @@ class UploadFilesRequest(BaseModel):
 class DeleteFilesRequest(BaseModel):
     file_ids: list
 
-
 @app.post("/upload_files")
 def upload_files2assitant(upload_files_request: UploadFilesRequest):
     adjust_assistant.create_files(ASSISTANT_ID, upload_files_request.files_path)
-
 
 @app.post("/delete_files")
 def upload_files2assitant(delete_files_request: DeleteFilesRequest):
@@ -43,9 +42,10 @@ def upload_files2assitant(delete_files_request: DeleteFilesRequest):
 def request_assistant():
     assistant = client.beta.assistants.retrieve(ASSISTANT_ID)
     assistant_instructions = assistant.instructions
+    print(assistant.model, assistant.name)
     # take picture -> compare picture -> retrieve user id and chat, make it all inside image_processing function and folder.
-
-    # # example: check_user_id + retrieve history
+    # add internet retrieval
+    # example: check_user_id + retrieve history
     user_id = "1"
     
     conversation_state: Dict[str, list] = {}
@@ -66,33 +66,45 @@ def request_assistant():
     exit_commands = ['اخرج', 'exit', 'أخرج', 'اخرج', 'انهاء', 'end']
     language = None
     while True:
-        print(language)
-        if language is not None:
-            prompt, _ = speech2text.getPrompt(language)
+        try:
+            prompt_data = speech2text.getPrompt(language if language else None)
+            if prompt_data is not None:
+                prompt, detected_language = prompt_data
+                if detected_language == 'arabic':
+                    language = 'ar'
+                elif detected_language == 'english':
+                    language = 'en'
 
-        else:
-            prompt, language = speech2text.getPrompt(language)
-            if language == 'arabic':
-                language='ar'
-
+                if prompt:
+                    logger.info(f"Detected Language: {language}, Transcript: {prompt}")
+                else:
+                    logger.info("Failed to get the transcript.")
             else:
-                language='en'
+                logger.info("No prompt data returned.")
 
-        print(prompt)
+        except Exception as e:
+            raise e
+
         if any(command.lower() in prompt.strip().lower() for command in exit_commands) or (prompt.strip().lower() is None):
             break
 
         AssistantInteractionObject.create_thread_and_run(user_input=prompt, user_instructions=assistant_instructions)
         response = AssistantInteractionObject.get_response()
-        utils.pretty_print(response)
+        
+        conversation.append({'user': prompt})
         for msg in response.data:
             role = msg.role
-            response = msg.content[0].text.value
+            reply = msg.content[0].text.value
+            print(reply)
             if role == 'assistant': 
+                response_dict = json.loads(reply)
+                text, reaction = response_dict['text'], response_dict['reaction']
+                logger.info(f"Role: {role}, Text: {text}, Reaction: {reaction}")
                 # Check state and emotion between 1,2,3,4 and sent it in API
-                text2speech.convert2speech(response)
+                text2speech.convert2speech(text)
+                temp_dict = {role: text}
 
-            temp_dict = {role: response}
+
             conversation.append(temp_dict)
 
     # Update the chat of the user

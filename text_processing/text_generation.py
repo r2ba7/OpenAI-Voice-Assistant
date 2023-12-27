@@ -2,11 +2,9 @@ import re, os, requests, openai, time
 import pandas as pd, numpy as np, warnings
 from etl.authentications import *
 
-
-
-def get_response(thread, message):
-    messages_list = client.beta.threads.messages.list(thread_id=thread.id, order="asc", after=message.id)
-    return messages_list
+def tavily_search(query):
+    search_result = tavily_client.get_search_context(query, search_depth="advanced", max_tokens=8000)
+    return search_result
 
 
 class AssistantInteraction:
@@ -30,7 +28,7 @@ class AssistantInteraction:
     def create_thread_and_run(self, user_input, user_instructions=None):
         self.thread = self.client.beta.threads.create()
         self.message, self.run = self.submit_message(user_message_content=user_input, user_instructions=user_instructions)
-        self.run = self.wait_on_run()
+        self.wait_on_run()
 
     def get_response(self):
         messages_list = self.client.beta.threads.messages.list(thread_id=self.thread.id, order="asc", after=self.message.id)
