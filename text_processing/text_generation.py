@@ -1,7 +1,9 @@
-import re, os, requests, openai, time
+import re, os, requests, json, time
+import openai
 import pandas as pd, numpy as np, warnings
 from etl.authentications import *
 from utils import general_utils
+from text_processing import text2speech
 
 instuctions = general_utils.read_instructions("documents/role.txt")
 
@@ -11,7 +13,7 @@ def tavily_search(query):
 
 
 def chatRequest(user_input, temperature=0.9, frequency_penalty=0.2, presence_penalty=0, conversation_history=None, instuctions=instuctions):
-
+    chunks = []
     conversation = [{"role": "system", "content": instuctions}]
 
     if conversation_history:
@@ -19,17 +21,30 @@ def chatRequest(user_input, temperature=0.9, frequency_penalty=0.2, presence_pen
                              "content": f"Here is the history of the conversation between you and the client: {conversation_history}"})
 
     conversation.append({"role": "user", "content": user_input})
-    completion = client.chat.completions.create(
+    completion = sync_client.chat.completions.create(
             model='gpt-4',
             messages=conversation,
             temperature=temperature,
             frequency_penalty=frequency_penalty,
             presence_penalty=presence_penalty,
-            )
+            stream=True,
+    )
     
-    chat_response = completion.choices[0].message.content
-    conversation.append({"role": "assistant", "content": chat_response})
-    return chat_response
+    for chunk in completion:
+        content = chunk.choices[0].delta.content or ""
+        chunks.append(content)
+
+    response = "".join(chunks)
+
+    try:
+        response_data = json.loads(response)
+    except json.JSONDecodeError:
+        response_data = {}
+
+    text, reaction = response_data['text'], response_data['reaction'] 
+    print("text:", text, "reaction:", reaction)
+    # text2speech.convert2speech(text)
+    return text
 
 
 class AssistantInteraction:

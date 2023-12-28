@@ -10,7 +10,7 @@ logger = general_utils.get_logger(__name__)
 
 def transcribe_audio(buffer, language=None, temperature=0):
     try:
-        transcript = client.audio.transcriptions.create(
+        transcript = sync_client.audio.transcriptions.create(
             model="whisper-1",
             file=buffer,
             response_format='verbose_json',
@@ -62,7 +62,7 @@ def getPrompt(language=None, max_retries=3):
 
 
 def save_conv():
-    no_save_commands = ['No', 'None', 'لا', 'لأ']
+    no_save_commands = ['No', 'None', 'لا', 'لأ', 'Nah']
     language = None
 
     text2speech.convert2speech("Would you like to save this conversation? - هل تحب ان تحتفظ بالمحادثة؟")

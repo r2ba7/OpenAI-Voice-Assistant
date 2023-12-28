@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 
 import openai
 from pymongo import MongoClient
-from openai import OpenAI
+from openai import OpenAI, AsyncOpenAI
 from tavily import TavilyClient
 
 load_dotenv()
@@ -16,11 +16,6 @@ ASSISTANT_ID = os.environ.get("openai_assistant_id")
 
 TAVILY_API_KEY = os.environ.get("tavily_api_key")
 
-
-
-
-client = OpenAI(api_key=OPENAI_API_KEY)
-tavily_client = TavilyClient(api_key=TAVILY_API_KEY)
 
 def connect_to_database(connection_string: str=dbconnection, 
                         db_name: str=dbname):
@@ -37,6 +32,9 @@ def connect_to_database(connection_string: str=dbconnection,
     db = client[db_name]
     return db
 
+sync_client = OpenAI(api_key=OPENAI_API_KEY)
+async_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+tavily_client = TavilyClient(api_key=TAVILY_API_KEY)
 db = connect_to_database()
 
 

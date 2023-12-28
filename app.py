@@ -43,8 +43,6 @@ def request_assistant():
     exit_commands = ['اخرج', 'exit', 'أخرج', 'اخرج', 'انهاء', 'end']
     is_save, language = speech2text.save_conv()
 
-    assistant = client.beta.assistants.retrieve(ASSISTANT_ID)
-    assistant_instructions = assistant.instructions
     # take picture -> compare picture -> retrieve user id and chat, make it all inside image_processing function and folder.
     # add internet retrieval
     # example: check_user_id + retrieve history
@@ -84,7 +82,7 @@ def request_assistant():
             break
 
         chat_response = text_generation.chatRequest(user_input=user_prompt)
-
+        text2speech.convert2speech(chat_response)
         
         conversation.append({'user': user_prompt})
         conversation.append({'assistant': chat_response})

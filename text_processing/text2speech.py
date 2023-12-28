@@ -3,7 +3,7 @@ import pandas as pd, numpy as np, warnings
 from etl.authentications import *
 
 def convert2speech(message):
-    response = client.audio.speech.create(
+    response = sync_client.audio.speech.create(
         model="tts-1",
         voice="alloy",
         response_format="opus",
