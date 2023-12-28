@@ -12,8 +12,41 @@ def tavily_search(query):
     return search_result
 
 
-def chatRequest(user_input, temperature=0.9, frequency_penalty=0.2, presence_penalty=0, conversation_history=None, instuctions=instuctions):
+async def async_chatRequest(user_input, temperature=0.9, frequency_penalty=0.2, presence_penalty=0, conversation_history=None, instuctions=instuctions):
+    
+    conversation = [{"role": "system", "content": instuctions}]
+
+    if conversation_history:
+        conversation.append({"role": "system", 
+                             "content": f"Here is the history of the conversation between you and the client: {conversation_history}"})
+
+    conversation.append({"role": "user", "content": user_input})
+    completion_stream = await async_client.chat.completions.create(
+            model='gpt-4',
+            messages=conversation,
+            temperature=temperature,
+            frequency_penalty=frequency_penalty,
+            presence_penalty=presence_penalty,
+            stream=True,
+    )
+    
     chunks = []
+    async for chunk in completion_stream:
+        content = chunk.choices[0].delta.content or ""
+        chunks.append(content)
+
+    response = "".join(chunks)
+
+    response_data = json.loads(response)
+
+    text, reaction = response_data['text'], response_data['reaction']
+    # reaction is sent here
+    print("text:", text, "reaction:", reaction)
+    text2speech.convert2speech(text)
+    return text
+
+def sync_chatRequest(user_input, temperature=0.9, frequency_penalty=0.2, presence_penalty=0, conversation_history=None, instuctions=instuctions):
+
     conversation = [{"role": "system", "content": instuctions}]
 
     if conversation_history:
@@ -27,24 +60,15 @@ def chatRequest(user_input, temperature=0.9, frequency_penalty=0.2, presence_pen
             temperature=temperature,
             frequency_penalty=frequency_penalty,
             presence_penalty=presence_penalty,
-            stream=True,
-    )
+            )
     
-    for chunk in completion:
-        content = chunk.choices[0].delta.content or ""
-        chunks.append(content)
-
-    response = "".join(chunks)
-
-    try:
-        response_data = json.loads(response)
-    except json.JSONDecodeError:
-        response_data = {}
-
-    text, reaction = response_data['text'], response_data['reaction'] 
+    chat_response = completion.choices[0].message.content
+    response_data = json.loads(chat_response)
+    text, reaction = response_data['text'], response_data['reaction']
+    # send reaction here
     print("text:", text, "reaction:", reaction)
-    # text2speech.convert2speech(text)
-    return text
+    text2speech.convert2speech(text)
+    return chat_response
 
 
 class AssistantInteraction:

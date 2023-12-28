@@ -1,15 +1,16 @@
-from text_processing import text_generation, text2speech, speech2text
-from utils import general_utils
-from etl.authentications import *
-from api_edit import adjust_assistant
-
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-import asyncio, json
+import asyncio, time
 
 from datetime import datetime
 from openai import OpenAI
 from typing import Dict
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+
+from text_processing import text_generation, text2speech, speech2text
+from utils import general_utils
+from etl.authentications import *
+
+
 
 app = FastAPI()
 logger = general_utils.get_logger(__name__)
@@ -19,23 +20,6 @@ logger = general_utils.get_logger(__name__)
 @app.get("/")
 async def root():
     return {"message": "Hello World! I'm Rabah. | 28/12/2023 - voice assitant - Trial 1."}
-
-class AssistantRequest(BaseModel):
-    pass
-
-class UploadFilesRequest(BaseModel):
-    files_path: str
-
-class DeleteFilesRequest(BaseModel):
-    file_ids: list
-
-@app.post("/upload_files")
-def upload_files2assitant(upload_files_request: UploadFilesRequest):
-    adjust_assistant.create_files(ASSISTANT_ID, upload_files_request.files_path)
-
-@app.post("/delete_files")
-def upload_files2assitant(delete_files_request: DeleteFilesRequest):
-    adjust_assistant.delete_files(ASSISTANT_ID, delete_files_request.file_ids)
 
 
 @app.post("/request_chat")
@@ -61,7 +45,7 @@ def request_assistant():
         user_instructions = conversation
         assistant_instructions = assistant_instructions + " Found Conversation History: " + user_instructions
 
-    
+    start_time = time.time()
     text2speech.convert2speech("Lets start conversation - لنبدأ المحادثة")
     while True:
         try:
@@ -80,10 +64,9 @@ def request_assistant():
 
         if any(command.lower() in user_prompt.strip().lower() for command in exit_commands) or (user_prompt.strip().lower() is None):
             break
-
-        chat_response = text_generation.chatRequest(user_input=user_prompt)
-        text2speech.convert2speech(chat_response)
         
+        # chat_response = asyncio.run(text_generation.async_chatRequest(user_input=user_prompt))
+        chat_response = text_generation.sync_chatRequest(user_input=user_prompt)
         conversation.append({'user': user_prompt})
         conversation.append({'assistant': chat_response})
 
@@ -91,7 +74,14 @@ def request_assistant():
     if is_save:
         pass
         # Save in database here.
-    
+    end_time = time.time()
+    time_difference_seconds = end_time - start_time
+
+    # Extract minutes and seconds from the time difference
+    minutes, seconds = divmod(time_difference_seconds, 60)
+
+    # Print the time in minutes and seconds
+    print(f"Time it took is: {int(minutes)} minutes and {int(seconds)} seconds")
     # Update the chat of the user
     return {"conversation": conversation}
         

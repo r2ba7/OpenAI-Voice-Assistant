@@ -62,10 +62,11 @@ def getPrompt(language=None, max_retries=3):
 
 
 def save_conv():
-    no_save_commands = ['No', 'None', 'لا', 'لأ', 'Nah']
+    no_save_commands = ['no', 'none', 'لا', 'لأ', 'Na']
+    save_commands = ['yes', 'save', 'ya', 'yeah', 'okay', 'اه', 'اجل', 'أجل', 'بلى']
     language = None
 
-    text2speech.convert2speech("Would you like to save this conversation? - هل تحب ان تحتفظ بالمحادثة؟")
+    text2speech.convert2speech("Would you like to save this conversation? say yes or ok or save - هل تحب ان تحتفظ بالمحادثة؟ قل نعم او أجل ")
 
     while True:
         try:
@@ -90,8 +91,11 @@ def save_conv():
         if any(command.lower() in prompt.strip().lower() for command in no_save_commands) or (prompt.strip().lower() is None):
             is_save = False
 
-        else:
+        elif any(command.lower() in prompt.strip().lower() for command in save_commands) or (prompt.strip().lower() is None):
             is_save = True
+
+        else:
+            text2speech.convert2speech("Please try again - برجاء المحاوله مره اخرى")
         
         return is_save, language
         
