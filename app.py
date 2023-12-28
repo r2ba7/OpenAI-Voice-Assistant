@@ -63,16 +63,15 @@ def request_assistant():
         user_instructions = conversation
         assistant_instructions = assistant_instructions + " Found Conversation History: " + user_instructions
 
-    AssistantInteractionObject = text_generation.AssistantInteraction(client, ASSISTANT_ID)
     
     text2speech.convert2speech("Lets start conversation - لنبدأ المحادثة")
     while True:
         try:
             prompt_data = speech2text.getPrompt(language)
             if prompt_data is not None:
-                prompt, _ = prompt_data
-                if prompt:
-                    logger.info(f"Transcript: {prompt}")
+                user_prompt, _ = prompt_data
+                if user_prompt:
+                    logger.info(f"Transcript: {user_prompt}")
                 else:
                     logger.info("Failed to get the transcript.")
             else:
@@ -81,27 +80,15 @@ def request_assistant():
         except Exception as e:
             raise e
 
-        if any(command.lower() in prompt.strip().lower() for command in exit_commands) or (prompt.strip().lower() is None):
+        if any(command.lower() in user_prompt.strip().lower() for command in exit_commands) or (user_prompt.strip().lower() is None):
             break
 
-        AssistantInteractionObject.create_thread_and_run(user_input=prompt, user_instructions=assistant_instructions)
-        response = AssistantInteractionObject.get_response()
+        chat_response = text_generation.chatRequest(user_input=user_prompt)
+
         
-        conversation.append({'user': prompt})
-        for msg in response.data:
-            role = msg.role
-            reply = msg.content[0].text.value
-            print(reply)
-            if role == 'assistant': 
-                response_dict = json.loads(reply)
-                text, reaction = response_dict['text'], response_dict['reaction']
-                logger.info(f"Role: {role}, Text: {text}, Reaction: {reaction}")
-                # Check state and emotion between 1,2,3,4 and sent it in API
-                text2speech.convert2speech(text)
-                temp_dict = {role: text}
+        conversation.append({'user': user_prompt})
+        conversation.append({'assistant': chat_response})
 
-
-            conversation.append(temp_dict)
 
     if is_save:
         pass

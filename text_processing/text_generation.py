@@ -1,10 +1,35 @@
 import re, os, requests, openai, time
 import pandas as pd, numpy as np, warnings
 from etl.authentications import *
+from utils import general_utils
+
+instuctions = general_utils.read_instructions("documents/role.txt")
 
 def tavily_search(query):
     search_result = tavily_client.get_search_context(query, search_depth="advanced", max_tokens=8000)
     return search_result
+
+
+def chatRequest(user_input, temperature=0.9, frequency_penalty=0.2, presence_penalty=0, conversation_history=None, instuctions=instuctions):
+
+    conversation = [{"role": "system", "content": instuctions}]
+
+    if conversation_history:
+        conversation.append({"role": "system", 
+                             "content": f"Here is the history of the conversation between you and the client: {conversation_history}"})
+
+    conversation.append({"role": "user", "content": user_input})
+    completion = client.chat.completions.create(
+            model='gpt-4',
+            messages=conversation,
+            temperature=temperature,
+            frequency_penalty=frequency_penalty,
+            presence_penalty=presence_penalty,
+            )
+    
+    chat_response = completion.choices[0].message.content
+    conversation.append({"role": "assistant", "content": chat_response})
+    return chat_response
 
 
 class AssistantInteraction:

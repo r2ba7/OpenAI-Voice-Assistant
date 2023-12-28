@@ -1,5 +1,16 @@
 import json, time, logging
 
+def read_instructions(file_path):
+    try:
+        with open(file_path, 'r') as file:
+            file_contents = file.read()
+            return file_contents
+    except FileNotFoundError:
+        return "File not found"
+    except Exception as e:
+        return str(e)
+
+
 def get_logger(name: str) -> logging.Logger:
     """
     Template for getting a logger.
