@@ -12,8 +12,7 @@ dbconnection = os.environ.get("dbconnection")
 dbname = os.environ.get("dbname")
 
 OPENAI_API_KEY = os.environ.get("openai_api_key")
-ASSISTANT_ID = os.environ.get("openai_assistant_id")
-
+ELEVENLABAS_API_KEY = os.environ.get("eleven_labs_key")
 TAVILY_API_KEY = os.environ.get("tavily_api_key")
 
 

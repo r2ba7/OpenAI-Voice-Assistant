@@ -7,11 +7,6 @@ from text_processing import text2speech
 
 instuctions = general_utils.read_instructions("documents/role.txt")
 
-def tavily_search(query):
-    search_result = tavily_client.get_search_context(query, search_depth="advanced", max_tokens=8000)
-    return search_result
-
-
 async def async_chatRequest(user_input, temperature=0.9, frequency_penalty=0.2, presence_penalty=0, conversation_history=None, instuctions=instuctions):
     
     conversation = [{"role": "system", "content": instuctions}]

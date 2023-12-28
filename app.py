@@ -65,8 +65,8 @@ def request_assistant():
         if any(command.lower() in user_prompt.strip().lower() for command in exit_commands) or (user_prompt.strip().lower() is None):
             break
         
-        # chat_response = asyncio.run(text_generation.async_chatRequest(user_input=user_prompt))
-        chat_response = text_generation.sync_chatRequest(user_input=user_prompt)
+        chat_response = asyncio.run(text_generation.async_chatRequest(user_input=user_prompt))
+        # chat_response = text_generation.sync_chatRequest(user_input=user_prompt)
         conversation.append({'user': user_prompt})
         conversation.append({'assistant': chat_response})
 
