@@ -18,7 +18,7 @@ logger = general_utils.get_logger(__name__)
 
 @app.get("/")
 async def root():
-    return {"message": "Hello World! I'm Rabah. | 23/12/2023 - voice assitant - Trial 1."}
+    return {"message": "Hello World! I'm Rabah. | 28/12/2023 - voice assitant - Trial 1."}
 
 class AssistantRequest(BaseModel):
     pass
@@ -40,9 +40,11 @@ def upload_files2assitant(delete_files_request: DeleteFilesRequest):
 
 @app.post("/request_chat")
 def request_assistant():
+    exit_commands = ['اخرج', 'exit', 'أخرج', 'اخرج', 'انهاء', 'end']
+    is_save, language = speech2text.save_conv()
+
     assistant = client.beta.assistants.retrieve(ASSISTANT_ID)
     assistant_instructions = assistant.instructions
-    print(assistant.model, assistant.name)
     # take picture -> compare picture -> retrieve user id and chat, make it all inside image_processing function and folder.
     # add internet retrieval
     # example: check_user_id + retrieve history
@@ -63,20 +65,14 @@ def request_assistant():
 
     AssistantInteractionObject = text_generation.AssistantInteraction(client, ASSISTANT_ID)
     
-    exit_commands = ['اخرج', 'exit', 'أخرج', 'اخرج', 'انهاء', 'end']
-    language = None
+    text2speech.convert2speech("Lets start conversation - لنبدأ المحادثة")
     while True:
         try:
-            prompt_data = speech2text.getPrompt(language if language else None)
+            prompt_data = speech2text.getPrompt(language)
             if prompt_data is not None:
-                prompt, detected_language = prompt_data
-                if detected_language == 'arabic':
-                    language = 'ar'
-                elif detected_language == 'english':
-                    language = 'en'
-
+                prompt, _ = prompt_data
                 if prompt:
-                    logger.info(f"Detected Language: {language}, Transcript: {prompt}")
+                    logger.info(f"Transcript: {prompt}")
                 else:
                     logger.info("Failed to get the transcript.")
             else:
@@ -107,6 +103,10 @@ def request_assistant():
 
             conversation.append(temp_dict)
 
+    if is_save:
+        pass
+        # Save in database here.
+    
     # Update the chat of the user
     return {"conversation": conversation}
         

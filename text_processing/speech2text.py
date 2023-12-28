@@ -59,3 +59,39 @@ def getPrompt(language=None, max_retries=3):
 
     logger.error("Maximum retries reached or failed to process audio")
     return None
+
+
+def save_conv():
+    no_save_commands = ['No', 'None', 'لا', 'لأ']
+    language = None
+
+    text2speech.convert2speech("Would you like to save this conversation? - هل تحب ان تحتفظ بالمحادثة؟")
+
+    while True:
+        try:
+            prompt_data = getPrompt(language if language else None)
+            if prompt_data is not None:
+                prompt, detected_language = prompt_data
+                if detected_language == 'arabic':
+                    language = 'ar'
+                elif detected_language == 'english':
+                    language = 'en'
+
+                if prompt:
+                    logger.info(f"Detected Language: {language}, Transcript: {prompt}")
+                else:
+                    logger.info("Failed to get the transcript.")
+            else:
+                logger.info("No prompt data returned.")
+
+        except Exception as e:
+            raise e
+
+        if any(command.lower() in prompt.strip().lower() for command in no_save_commands) or (prompt.strip().lower() is None):
+            is_save = False
+
+        else:
+            is_save = True
+        
+        return is_save, language
+        
