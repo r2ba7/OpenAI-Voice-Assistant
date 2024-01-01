@@ -63,7 +63,7 @@ def sync_chatRequest(user_input, temperature=0.9, frequency_penalty=0.2, presenc
     # send reaction here
     print("text:", text, "reaction:", reaction)
     text2speech.convert2speech(text)
-    return chat_response
+    return text, reaction
 
 
 class AssistantInteraction:

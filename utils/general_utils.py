@@ -5,6 +5,7 @@ def read_instructions(file_path):
         with open(file_path, 'r') as file:
             file_contents = file.read()
             return file_contents
+        
     except FileNotFoundError:
         return "File not found"
     except Exception as e:

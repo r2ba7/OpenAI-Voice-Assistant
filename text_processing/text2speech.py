@@ -12,17 +12,10 @@ def convert2speech(message):
     )
     
     audio_stream = io.BytesIO(response.content)
-    
-    # Initialize Pygame
     pygame.mixer.init()
-    
-    # Create a Pygame sound object from the audio stream
     sound = pygame.mixer.Sound(audio_stream)
-    
-    # Play the audio
     sound.play()
-    
-    # Wait for the audio to finish playing
+
     while pygame.mixer.get_busy():
         pygame.time.delay(50)
 
@@ -35,6 +28,7 @@ def convert2speech_elevenlabs(message, voice_id="21m00Tcm4TlvDq8ikWAM", api_key=
     }
     data = {
         'text': message,
+        # 'model_id': 'eleven_monolingual_v1',
         'model_id': 'eleven_multilingual_v2',
         'voice_settings': {
             'stability': 0.6,

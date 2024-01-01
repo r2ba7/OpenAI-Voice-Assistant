@@ -24,11 +24,8 @@ async def root():
 
 @app.post("/request_chat")
 def request_assistant():
-    exit_commands = ['اخرج', 'exit', 'أخرج', 'اخرج', 'انهاء', 'end']
-    is_save, language = speech2text.save_conv()
-
+    
     # take picture -> compare picture -> retrieve user id and chat, make it all inside image_processing function and folder.
-    # add internet retrieval
     # example: check_user_id + retrieve history
     user_id = "1"
     
@@ -46,7 +43,8 @@ def request_assistant():
         assistant_instructions = assistant_instructions + " Found Conversation History: " + user_instructions
 
     start_time = time.time()
-    text2speech.convert2speech("Lets start conversation - لنبدأ المحادثة")
+    language = speech2text.startConversation()
+    exit_commands = ['اخرج', 'exit', 'أخرج', 'اخرج', 'انهاء', 'end']
     while True:
         try:
             prompt_data = speech2text.getPrompt(language)
@@ -65,15 +63,16 @@ def request_assistant():
         if any(command.lower() in user_prompt.strip().lower() for command in exit_commands) or (user_prompt.strip().lower() is None):
             break
         
-        chat_response = asyncio.run(text_generation.async_chatRequest(user_input=user_prompt))
-        # chat_response = text_generation.sync_chatRequest(user_input=user_prompt)
+        # chat_response = asyncio.run(text_generation.async_chatRequest(user_input=user_prompt))
+        text, reaction = text_generation.sync_chatRequest(user_input=user_prompt)
         conversation.append({'user': user_prompt})
-        conversation.append({'assistant': chat_response})
+        conversation.append({'assistant': text})
 
-
+    is_save = speech2text.saveConversation(language)
     if is_save:
-        pass
         # Save in database here.
+        pass
+        
     end_time = time.time()
     time_difference_seconds = end_time - start_time
 
