@@ -8,7 +8,7 @@ from text_processing import text2speech
 logger = general_utils.get_logger(__name__)
 
 
-def transcribeAudio(buffer, language=None, temperature=0.2):
+def transcribeAudio(buffer, language, temperature):
     try:
         transcript = sync_client.audio.transcriptions.create(
             model="whisper-1",
@@ -28,120 +28,89 @@ async def async_transcribe_audio(buffer, language=None, temperature=0.2):
     return await loop.run_in_executor(None, transcribeAudio, buffer, language, temperature)
 
 
-def getPrompt(language=None, max_retries=3):
+def getPrompt(language=None):
     recognizer = sr.Recognizer()
-    retry_count = 0
 
-    while retry_count < max_retries:
+    while True:
         try:
             with sr.Microphone() as source:
                 logger.info("Listening")
                 audio = recognizer.listen(source)
 
             logger.info("Finished Recording")
-            buffer = io.BytesIO(audio.get_wav_data())
-            buffer.name = 'test.wav'
-
+            buffer = io.BytesIO(audio.get_wav_data()); buffer.name = 'test.wav';
             transcript = asyncio.run(async_transcribe_audio(buffer, language))
             if transcript is None:
-                retry_count += 1
                 continue
 
             if language or transcript.language in ['english', 'arabic']:
                 return transcript.text, transcript.language
-
+            
+            logger.info(f"{transcript.text, transcript.language}")
             text2speech.convert2speech("Language not detected, Please Try again")
 
         except Exception as e:
             logger.error(f"Error during recording or processing: {e}")
-        finally:
-            retry_count += 1
 
-    logger.error("Maximum retries reached or failed to process audio")
-    return None
+
 
 def startConversation():
     start_commands = ['start', 'go', 'بدأ', 'بدا', 'انطلق']
-    language = None
+    logger.info(f"In Start")
 
     while True:
-        try:
-            prompt_data = getPrompt(language if language else None)
-            if prompt_data is not None:
-                prompt, detected_language = prompt_data
+        prompt, detected_language = getPrompt(None) 
+        # English and Arabic here to adjust messages, in getPrompt I make sure that output must be in English or Arabic.
+        if detected_language == 'arabic':
+            language = 'ar'
+            start_message = "لنبدأ المحادثة"
+            keyword_error_message = "برجاء المحاوله مره اخرى"
 
-                if detected_language == 'arabic':
-                    language = 'ar'
-                elif detected_language == 'english':
-                    language = 'en'
+        elif detected_language == 'english':
+            language = 'en'
+            start_message = "Lets start conversation"
+            keyword_error_message = "Please try again to start conversation"
 
-                if prompt:
-                    logger.info(f"Detected Language: {language}, Transcript: {prompt}")
-                else:
-                    logger.info("Failed to get the transcript.")
-                    continue
-            else:
-                logger.info("No prompt data returned.")
-                continue
+        logger.info(f"Detected Language: {language}, Transcript: {prompt}")
 
-        except Exception as e:
-            raise e
-
-        
         if any(command.lower() in prompt.strip().lower() for command in start_commands):
-            if language == 'ar':
-                message = "لنبدأ المحادثة"
-            else:
-                message = "Lets start conversation"
-
             logger.info(f"{prompt.strip().lower()} - Conversation will start.")
-            text2speech.convert2speech(message)
-
+            text2speech.convert2speech(start_message)
+            return language
+        
         else:
-            text2speech.convert2speech("Please try again to start conversation - برجاء المحاوله مره اخرى")
+            text2speech.convert2speech(keyword_error_message)
             continue
         
-        return language
-
-
 
 def saveConversation(language):
-    no_save_commands = ['no', 'none', 'لا', 'لأ', 'ىa']
-    save_commands = ['yes', 'save', 'ya', 'yeah', 'okay', 'ايوه', 'اجل', 'أجل', 'بلى', 'نعم']
+    no_save_commands = ['no', 'none', 'لا', 'لأ']
+    save_commands = ['yes', 'save', 'ya', 'yeah', 'okay', 'ah', 'ايوه', 'اجل', 'أجل', 'بلى', 'نعم']
 
+    # English and Arabic here to adjust messages, in getPrompt I make sure that output must be in English or Arabic.
     if language == 'ar':
-        message = "هل تحب ان تحتفظ بالمحادثة؟"
-    else:
-        message = "Would you like to save this conversation?"
+        save_message = "هل تحب ان تحتفظ بالمحادثة؟"
+        keyword_error_message = "برجاء المحاوله مره اخرى"
 
-    text2speech.convert2speech(message)
+    elif language == 'en':
+        save_message = "Would you like to save this conversation?"
+        keyword_error_message = "Please try again"
+
+    text2speech.convert2speech(save_message)
 
     while True:
-        try:
-            prompt_data = getPrompt(language)
-            if prompt_data is not None:
-                prompt, _ = prompt_data
-                if prompt:
-                    logger.info(f"Transcript: {prompt}")
-                else:
-                    logger.info("Failed to get the transcript.")
-            else:
-                logger.info("No prompt data returned.")
-
-        except Exception as e:
-            raise e
+        prompt, _ = getPrompt(language)
+        logger.info(f"Transcript: {prompt}")
 
         if any(command.lower() in prompt.strip().lower() for command in no_save_commands):
             logger.info(f"{prompt.strip().lower()} - Not saved.")
             is_save = False
+            return is_save
 
         elif any(command.lower() in prompt.strip().lower() for command in save_commands):
             logger.info(f"{prompt.strip().lower()} - saved.")
             is_save = True
+            return is_save
 
         else:
-            text2speech.convert2speech("Please try again - برجاء المحاوله مره اخرى")
-            continue
-        
-        return is_save
-        
+            text2speech.convert2speech(keyword_error_message)

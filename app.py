@@ -11,7 +11,6 @@ from utils import general_utils
 from etl.authentications import *
 
 
-
 app = FastAPI()
 logger = general_utils.get_logger(__name__)
 
@@ -19,7 +18,7 @@ logger = general_utils.get_logger(__name__)
 
 @app.get("/")
 async def root():
-    return {"message": "Hello World! I'm Rabah. | 28/12/2023 - voice assitant - Trial 1."}
+    return {"message": "Hello World! I'm Rabah, the programmer of Rabeh. | 1/1/2024 - voice assistant - Trial 1."}
 
 
 @app.post("/request_chat")
@@ -46,19 +45,8 @@ def request_assistant():
     language = speech2text.startConversation()
     exit_commands = ['اخرج', 'exit', 'أخرج', 'اخرج', 'انهاء', 'end']
     while True:
-        try:
-            prompt_data = speech2text.getPrompt(language)
-            if prompt_data is not None:
-                user_prompt, _ = prompt_data
-                if user_prompt:
-                    logger.info(f"Transcript: {user_prompt}")
-                else:
-                    logger.info("Failed to get the transcript.")
-            else:
-                logger.info("No prompt data returned.")
-
-        except Exception as e:
-            raise e
+        user_prompt, _ = speech2text.getPrompt(language) 
+        logger.info(f"Transcript: {user_prompt}")
 
         if any(command.lower() in user_prompt.strip().lower() for command in exit_commands) or (user_prompt.strip().lower() is None):
             break
