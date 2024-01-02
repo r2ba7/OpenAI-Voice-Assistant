@@ -24,7 +24,7 @@ def capture_and_save_image():
 
         # Check for key press events
         key = cv2.waitKey(1) & 0xFF
-
+        
         # Check if the "E" key is pressed (key code 101 for lowercase 'e')
         if key == 101:
             capture_image = True  # Set the flag to capture the image

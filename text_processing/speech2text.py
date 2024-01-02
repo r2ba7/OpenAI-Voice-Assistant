@@ -23,12 +23,12 @@ def transcribeAudio(buffer, language, temperature):
         logger.error(f"Error during transcription: {e}")
         return None
 
-async def async_transcribe_audio(buffer, language=None, temperature=0.2):
+async def async_transcribe_audio(buffer, language, temperature):
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, transcribeAudio, buffer, language, temperature)
 
 
-def getPrompt(language=None):
+def getPrompt(language=None, temperature=0):
     recognizer = sr.Recognizer()
 
     while True:
@@ -39,25 +39,28 @@ def getPrompt(language=None):
 
             logger.info("Finished Recording")
             buffer = io.BytesIO(audio.get_wav_data()); buffer.name = 'test.wav';
-            transcript = asyncio.run(async_transcribe_audio(buffer, language))
-            if transcript is None:
+            transcript = asyncio.run(async_transcribe_audio(buffer, language, temperature))
+
+            transcript_language = getattr(transcript, 'language', None)
+            if (transcript is None) or not (language or transcript_language in ['english', 'arabic']):
+                logger.info(f"{transcript.text, transcript.language}")
+                logger.info("Transcription failed or language not supported, trying again...")
+                text2speech.convert2speech("Transcription failed or language not supported, trying again...")
                 continue
 
-            if language or transcript.language in ['english', 'arabic']:
-                return transcript.text, transcript.language
-            
-            logger.info(f"{transcript.text, transcript.language}")
-            text2speech.convert2speech("Language not detected, Please Try again")
+            # Successful transcription in the desired language
+            return transcript.text, transcript_language
 
         except Exception as e:
             logger.error(f"Error during recording or processing: {e}")
 
 
-
 def startConversation():
     start_commands = ['start', 'go', 'بدأ', 'بدا', 'انطلق']
+    take_photo_commands = ['take', 'photo', 'تصوير', 'صور']
+    # dont exit from take photo until frame is returned, use this frame to retrieve client information from database
     logger.info(f"In Start")
-
+    text2speech.convert2speech("Please say start or go to select language - برجاء قول ابدأ او انطلق للبدأ")
     while True:
         prompt, detected_language = getPrompt(None) 
         # English and Arabic here to adjust messages, in getPrompt I make sure that output must be in English or Arabic.
