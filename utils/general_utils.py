@@ -7,22 +7,39 @@ def read_instructions(file_path):
             return file_contents
         
     except FileNotFoundError:
-        return "File not found"
+        return None
+    
     except Exception as e:
-        return str(e)
+        return None
 
 
-def get_logger(name: str) -> logging.Logger:
+def get_logger(name: str, level=logging.INFO) -> logging.Logger:
     """
-    Template for getting a logger.
+    Enhanced template for getting a logger.
 
     Args:
-        name: Name of the logger.
+        name (str): Name of the logger.
+        level: Logging level, defaults to logging.INFO.
 
-    Returns: Logger.
+    Returns:
+        logging.Logger: Configured logger.
     """
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    # Set up a specific format for log messages
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    # Create a StreamHandler (you can also add FileHandler if needed)
+    stream_handler = logging.StreamHandler()
+    stream_handler.setLevel(level)
+    stream_handler.setFormatter(formatter)
+
+    # Initialize the logger
     logger = logging.getLogger(name)
+    logger.setLevel(level)
+
+    # Avoid adding multiple handlers if the logger is already initialized
+    if not logger.handlers:
+        logger.addHandler(stream_handler)
 
     class TimingFilter(logging.Filter):
         """
@@ -32,5 +49,7 @@ def get_logger(name: str) -> logging.Logger:
             record.time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(record.created))
             return True
 
+    # Add the custom timing filter to the logger
     logger.addFilter(TimingFilter())
+
     return logger

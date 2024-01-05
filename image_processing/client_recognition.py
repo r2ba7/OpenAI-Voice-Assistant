@@ -1,6 +1,3 @@
-import time
-
-import cv2
 import face_recognition
 
 from etl import database_methods
@@ -9,46 +6,6 @@ from utils import general_utils
 
 
 logger = general_utils.get_logger(__name__)
-
-
-def captureImage():
-    """
-    Captures an image using the default camera.
-
-    Returns:
-    - image (numpy.ndarray): Captured image if successful; None if an error occurs or if 'E' key is pressed.
-    """
-    cap = cv2.VideoCapture(0)
-    if not cap.isOpened():
-        logger.info("Error: Could not open the camera.")
-        return None
-
-    capture_image = False  # Flag to track if "E" key is pressed
-    image = None  # Variable to store the captured image
-    while True:
-        try:
-            ret, frame = cap.read()
-            if not ret:
-                logger.info("Error: Could not capture an image.")
-                break
-
-            cv2.imshow("Camera Feed", frame)
-            key = cv2.waitKey(1) & 0xFF
-            if key == 101:
-                logger.info(f"Image is taken")
-                capture_image = True 
-                image = frame
-
-            if capture_image:
-                break
-
-            cap.release()
-            cv2.destroyAllWindows()
-            return image
-        
-        except Exception as e:
-            logger.error(f"Error loading image: {str(e)}")
-            return None
 
 
 def compare_images(client_image, db_image):
@@ -99,6 +56,7 @@ def compare_images(client_image, db_image):
     
     else:
         return False, 0
+    
 
 def getClient(client_image, accuracy_threshold):
     """
@@ -128,36 +86,3 @@ def getClient(client_image, accuracy_threshold):
     else:
         logger.warning(f"No matching client found with accuracy above {accuracy_threshold}%.")
         return None
-
-
-def clientRecognizition(accuracy_threshold=50):
-    """
-    Processes client recognition based on a captured image.
-
-    Parameters:
-    - accuracy_threshold (int, optional): Threshold for accuracy in image recognition, default is 50.
-
-    Returns:
-    - (bool, tuple): Returns a tuple where the first element is a boolean indicating if an existing client was recognized.
-                     The second element is a tuple containing the client_id. If an existing client is recognized, it also includes chat history.
-    """
-    client_image = captureImage()
-    time.sleep(5)
-    client_id = getClient(client_image=client_image, accuracy_threshold=accuracy_threshold)
-    time.sleep(5)
-    client_found = False
-
-    if client_id:
-        chat_history, chat_found = database_methods.retrieveHistory(client_id)
-        client_found = True
-        time.sleep(5)
-        return client_found, (client_id, chat_history, chat_found)
-    
-    else:
-        client_id = database_methods.createClient()
-        chat_found = False
-        database_methods.createImage(client_image, client_id)
-        time.sleep(5)
-        return client_found, (client_id, chat_found)
-
-

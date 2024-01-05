@@ -41,12 +41,12 @@ def createImage(client_image, client_id):
     except Exception as e:
         logger.error(f"Error in save_image: {str(e)}")
 
-def createConv(chat_history, client_id):
+def createConv(conv_history, client_id):
     try:
         current_time = datetime.datetime.now()
         chat_document = {
             'client_id': client_id,
-            'chatHistory': chat_history,
+            'conversationHistory': conv_history,
             'createdAt': current_time
         }
 
@@ -56,14 +56,14 @@ def createConv(chat_history, client_id):
     except Exception as e:
         logger.error(f"Error in createConv: {str(e)}")
     
-def updateConv(chat_history, client_id):
+def updateConv(conv_history, client_id):
     try:
         current_time = datetime.datetime.now()
         result = db.messages.update_one(
             {'client_id': client_id},
             {
                 '$set': {
-                    'chatHistory': chat_history,
+                    'conversationHistory': conv_history,
                     'updatedAt': current_time
                 }
             }
@@ -83,7 +83,7 @@ def retrieveHistory(client_id):
         chat_document = db.messages.find_one({'client_id': client_id})
         chat_found = False
         if chat_document:
-            chat_history = chat_document['chatHistory']
+            chat_history = chat_document['conversationHistory']
             chat_found = True
             logger.info(f"Chat history was found for client_id: {client_id}")
             return chat_history, chat_found
