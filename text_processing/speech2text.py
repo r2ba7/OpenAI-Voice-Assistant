@@ -1,34 +1,36 @@
+import asyncio
+import io
+
+import numpy as np
+import pandas as pd
 import speech_recognition as sr
-import re, os, requests, openai, time, io, asyncio
-import pandas as pd, numpy as np, warnings
-from utils import general_utils
+
 from etl.authentications import *
-from text_processing import text2speech
+from text_processing import text2speech, text_generation
+from utils import general_utils
 
 logger = general_utils.get_logger(__name__)
 
-
-def transcribeAudio(buffer, language, temperature):
-    try:
-        transcript = sync_client.audio.transcriptions.create(
-            model="whisper-1",
-            file=buffer,
-            response_format='verbose_json',
-            language=language,
-            temperature=temperature
-        )
-        return transcript
-    
-    except Exception as e:
-        logger.error(f"Error during transcription: {e}")
-        return None
-
-async def async_transcribe_audio(buffer, language, temperature):
-    loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, transcribeAudio, buffer, language, temperature)
-
-
 def getPrompt(language=None, temperature=0):
+    def transcribeAudio(buffer, language, temperature):
+        try:
+            transcript = sync_client.audio.transcriptions.create(
+                model="whisper-1",
+                file=buffer,
+                response_format='verbose_json',
+                language=language,
+                temperature=temperature
+            )
+            return transcript
+        
+        except Exception as e:
+            logger.error(f"Error during transcription: {e}")
+            return None
+
+    async def async_transcribe_audio(buffer, language, temperature):
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, transcribeAudio, buffer, language, temperature)
+
     recognizer = sr.Recognizer()
 
     while True:
@@ -40,16 +42,24 @@ def getPrompt(language=None, temperature=0):
             logger.info("Finished Recording")
             buffer = io.BytesIO(audio.get_wav_data()); buffer.name = 'test.wav';
             transcript = asyncio.run(async_transcribe_audio(buffer, language, temperature))
-
-            transcript_language = getattr(transcript, 'language', None)
-            if (transcript is None) or not (language or transcript_language in ['english', 'arabic']):
-                logger.info(f"{transcript.text, transcript.language}")
-                logger.info("Transcription failed or language not supported, trying again...")
-                text2speech.convert2speech("Transcription failed or language not supported, trying again...")
-                continue
-
-            # Successful transcription in the desired language
-            return transcript.text, transcript_language
+            if transcript is None:
+                    logger.info("Transcription failed, trying again...")
+                    text2speech.convert2speech("Transcription failed, trying again")
+                    continue
+            else:
+                if language is None:
+                    corrected_text, corrected_language = text_generation.startConv_chatRequest(transcript.text)
+                    logger.info(f"{corrected_text}, {transcript.text}")
+                    if corrected_language not in ['english', 'arabic']:
+                        
+                        logger.info("Transcription failed or language not supported, trying again...")
+                        text2speech.convert2speech("Transcription failed or language not supported, trying again...")
+                        continue
+                    
+                    return corrected_text, corrected_language
+                else:
+                    transcript_language = getattr(transcript, 'language', None)
+                    return transcript.text, transcript_language
 
         except Exception as e:
             logger.error(f"Error during recording or processing: {e}")

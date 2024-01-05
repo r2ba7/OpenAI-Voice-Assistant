@@ -1,9 +1,12 @@
-import re, os, requests, json, time
-import openai
-import pandas as pd, numpy as np, warnings
+import json
+import time
+
 from etl.authentications import *
-from utils import general_utils
 from text_processing import text2speech
+from utils import general_utils
+
+
+
 
 instuctions = general_utils.read_instructions("documents/role.txt")
 
@@ -45,8 +48,7 @@ def sync_chatRequest(user_input, temperature=0.9, frequency_penalty=0.2, presenc
     conversation = [{"role": "system", "content": instuctions}]
 
     if conversation_history:
-        conversation.append({"role": "system", 
-                             "content": f"Here is the history of the conversation between you and the client: {conversation_history}"})
+        conversation.append({"role": "system", "content": conversation_history})
 
     conversation.append({"role": "user", "content": user_input})
     completion = sync_client.chat.completions.create(
@@ -65,6 +67,29 @@ def sync_chatRequest(user_input, temperature=0.9, frequency_penalty=0.2, presenc
     text2speech.convert2speech(text)
     return text, reaction
 
+
+def startConv_chatRequest(user_input, temperature=0.9, frequency_penalty=0.2, presence_penalty=0):
+    conversation = [{"role": "system", "content": "You're a bilingual assistant trained to recognize, understand, and correct both Arabic and English languages. \
+                     When given an input – a word or a sentence – your task is to detect its origin language, even if it was transcribed or written in another script or language. \
+                     If the input contains words from a language other than English or Arabic, translate only those words into English, keeping the rest of the input unchanged. \
+                     You should consider common transliterations and recognize words from one language that are commonly used or known in another (e.g., 'Hello' written as 'هلو'). \
+                     In cases where the input is entirely in a language other than English or Arabic, translate the entire input to English. \
+                     Your output must be a dictionary, with two keys: text, containing the corrected, recognized, or translated word in its original or English language, \
+                     and language, indicating the identified origin language of the word or 'English' for translated segments."}]
+    
+    conversation.append({"role": "user", "content": user_input})
+    completion = sync_client.chat.completions.create(
+            model='gpt-4',
+            messages=conversation,
+            temperature=temperature,
+            frequency_penalty=frequency_penalty,
+            presence_penalty=presence_penalty,
+            )
+    
+    chat_response = completion.choices[0].message.content
+    response_data = json.loads(chat_response)
+    text, language = response_data['text'], response_data['language']
+    return text, language.lower()
 
 class AssistantInteraction:
     def __init__(self, client, ASSISTANT_ID):

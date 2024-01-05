@@ -34,13 +34,3 @@ def get_logger(name: str) -> logging.Logger:
 
     logger.addFilter(TimingFilter())
     return logger
-
-
-def show_json(obj):
-    display(json.loads(obj.model_dump_json()))
-
-def pretty_print(messages):
-    print("# Messages")
-    for m in messages:
-        print(f"{m.role}: {m.content[0].text.value}")
-    print()
