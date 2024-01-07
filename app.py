@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 from etl import database_methods
 from etl.authentications import *
-import main
+import main, setup
 from text_processing import text2speech, text_generation, speech2text
 from utils import general_utils
 
@@ -21,7 +21,7 @@ logger = general_utils.get_logger(__name__)
 
 @app.get("/")
 async def root():
-    return {"message": "Hello World! I'm Rabah, the programmer of Rabeh. | 5/1/2024 - voice assistant - Trial 1."}
+    return {"message": "Hello World! I'm Rabah, the programmer of Rabeh. | 7/1/2024 - voice assistant - Trial 1."}
 
 
 @app.post("/request_chat")
@@ -38,7 +38,8 @@ def request_assistant():
         if exit_flag:
             break
         
-        text, reaction = text_generation.sync_chatRequest(user_input=user_prompt, conversation_history=conv_history_instructions)
+        text, reaction = main.conversationCycle(language=language, user_input=user_prompt, conversation_history=conv_history_instructions)
+
         if reaction == "other":
             conv_history.append(f"user:{user_prompt}"); conv_history.append(f"assistant:{text}");
             
@@ -49,5 +50,3 @@ def request_assistant():
     minutes, seconds = divmod(time.time() - start_time, 60)
     print(f"Time it took is: {int(minutes)} minutes and {int(seconds)} seconds")
     return {"conversation": conv_history}
-        
-

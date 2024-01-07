@@ -1,4 +1,5 @@
-import json, time, logging
+import logging
+import time
 
 def read_instructions(file_path):
     try:

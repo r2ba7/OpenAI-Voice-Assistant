@@ -4,7 +4,7 @@ import string
 from etl import database_methods
 from etl.authentications import *
 from image_processing import client_recognition, image_capturing
-from text_processing import text2speech, speech2text
+from text_processing import text2speech, speech2text, text_generation
 from utils import general_utils
 
 logger = general_utils.get_logger(__name__)
@@ -32,19 +32,15 @@ def clientRecognition(accuracy_threshold=50):
     history based on the recognition result.
     """
     client_image = image_capturing.captureImage()
-    # time.sleep(5)
     client_id = client_recognition.getClient(client_image=client_image, accuracy_threshold=accuracy_threshold)
-    # time.sleep(5)
-    conv_history_instructions = None
-    conv_history = []
-    conv_found = False
+    conv_history_instructions = None; conv_history = []; conv_found = False;
 
     if client_id:
         conv_history, conv_found = database_methods.retrieveHistory(client_id)
         if conv_found:
-            formatted_conv_history = "\n".join(conv_history)
+            formatted_conv_history = " ".join(conv_history)
             conv_history_instructions = (
-                f"Here is a chat conversation between you and the client:\n{formatted_conv_history}\n"
+                f"Here is a chat conversation between you and the current client:{formatted_conv_history} "
                 "You can use that history to know information about the client, and also you can fetch information from previous chats."
             )
 
@@ -52,80 +48,109 @@ def clientRecognition(accuracy_threshold=50):
         client_id = database_methods.createClient()
         database_methods.createImage(client_image, client_id)
 
-    # time.sleep(5)
     return client_id, conv_history, conv_found, conv_history_instructions
 
 
+def say_message(message, language):
+    if language == 'en':
+        text2speech.convert2speech(message)
+
+    elif language == 'ar':
+        text2speech.convert2speech_elevenlabs(message)
+
+    else:
+        text2speech.convert2speech(message)
+
+def is_command_present(commands, prompt, exit_flag=False):
+    if not exit_flag:
+        return any(command.lower() in prompt.strip().lower() for command in commands)
+    
+    else:
+        return any(command.lower() in prompt for command in commands)
+
+
 def startConversationPrompt():
+    def get_language_specific_messages_start(language):
+        messages = {
+            'ar': ("لنبدأ المحادثة" , "برجاء المحاوله مره اخرى"),
+            'en': ("Lets start conversation", "Please try again")
+        }
+        return messages[language]
+
     start_commands = ['start', 'go', 'begin', 'بدأ', 'بدا', 'انطلق']
-    take_photo_commands = ['take', 'photo', 'تصوير', 'صور']
-    # dont exit from take photo until frame is returned, use this frame to retrieve client information from database
-    logger.info(f"In Start")
-    text2speech.convert2speech("Please say start or go - برجاء قول ابدأ او انطلق")
+
+    say_message("Please say start or go For English", language='en')
+    say_message("برجاء قول ابدأ او انطلق للعربيه", language='ar')
+
     while True:
-        prompt, detected_language = speech2text.getPrompt(None) 
-        # English and Arabic here to adjust messages, in getPrompt I make sure that output must be in English or Arabic.
-        if detected_language == 'arabic':
-            language = 'ar'
-            start_message = "لنبدأ المحادثة"
-            keyword_error_message = "برجاء المحاوله مره اخرى"
-
-        elif detected_language == 'english':
-            language = 'en'
-            start_message = "Lets start conversation"
-            keyword_error_message = "Please try again to start conversation"
-
-        logger.info(f"Detected Language: {language}, Transcript: {prompt}")
-
-        if any(command.lower() in prompt.strip().lower() for command in start_commands):
+        prompt, detected_language = speech2text.getPrompt(None)
+        print(prompt) 
+        language = 'ar' if detected_language == 'arabic' else 'en'
+        start_message, keyword_error_message = get_language_specific_messages_start(language)
+        if is_command_present(start_commands, prompt):
+            say_message(start_message, language)
             logger.info(f"{prompt.strip().lower()} - Conversation will start.")
-            text2speech.convert2speech(start_message)
             return language
         
         else:
-            text2speech.convert2speech(keyword_error_message)
+            say_message(keyword_error_message, language)
+            logger.error(f"{keyword_error_message}")
             continue
+
+
+def conversationCycle(language, user_input, conversation_history):
+    def get_language_specific_messages_cycle(language):
+        messages = {
+            'ar': ("برجاء تكرار المحاوله مره اخرى"),
+            'en': ("Please repeat again")
+        }
+        return messages[language]
+
+    while True:
+        text, reaction = text_generation.sync_chatRequest(language=language, user_input=user_input, 
+                                                          conversation_history=conversation_history)
+        if text is not  None and reaction is not None:
+            return text, reaction
         
+        else:
+            error_message = get_language_specific_messages_cycle(language=language)
+            say_message(error_message, language)
+            continue
+
 
 def saveConversationPrompt(language):
+    def get_language_specific_messages_save(language):
+        messages = {
+            'ar': ("هل تحب ان تحتفظ بالمحادثة؟", "برجاء المحاوله مره اخرى"),
+            'en': ("Would you like to save this conversation?", "Please try again")
+        }
+        return messages[language]
+    
+
     no_save_commands = ['no', 'none', 'لا', 'لأ']
     save_commands = ['yes', 'save', 'ya', 'yeah', 'okay', 'ah', 'ايوه', 'اجل', 'أجل', 'بلى', 'نعم']
 
-    # English and Arabic here to adjust messages, in getPrompt I make sure that output must be in English or Arabic.
-    if language == 'ar':
-        save_message = "هل تحب ان تحتفظ بالمحادثة؟"
-        keyword_error_message = "برجاء المحاوله مره اخرى"
-
-    elif language == 'en':
-        save_message = "Would you like to save this conversation?"
-        keyword_error_message = "Please try again"
-
-    text2speech.convert2speech(save_message)
-
+    save_message, keyword_error_message = get_language_specific_messages_save(language=language)
+    say_message(save_message, language)
+    
     while True:
         prompt, _ = speech2text.getPrompt(language)
         logger.info(f"Transcript: {prompt}")
 
-        if any(command.lower() in prompt.strip().lower() for command in no_save_commands):
-            logger.info(f"{prompt.strip().lower()} - Not saved.")
-            is_save = False
-            return is_save
+        if is_command_present(no_save_commands, prompt):
+            return False
 
-        elif any(command.lower() in prompt.strip().lower() for command in save_commands):
-            logger.info(f"{prompt.strip().lower()} - saved.")
-            is_save = True
-            return is_save
+        elif is_command_present(save_commands, prompt):
+            return True
 
         else:
-            text2speech.convert2speech(keyword_error_message)
-
+            say_message(keyword_error_message, language)
 
 def exitConversation(user_prompt):
     exit_commands = ['end', 'exit', 'finish', 'اخرج', 'أخرج', 'اخرج', 'انهاء']
     translator = str.maketrans('', '', string.punctuation)
     user_prompt_words = user_prompt.strip().lower().translate(translator).split()
-    
-    if any(command.lower() in user_prompt_words for command in exit_commands):
+    if is_command_present(exit_commands, user_prompt_words, True):
         return True
     
     else:

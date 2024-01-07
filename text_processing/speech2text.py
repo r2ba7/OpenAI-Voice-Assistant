@@ -38,6 +38,7 @@ def getPrompt(language=None, temperature=0):
         try:
             with sr.Microphone() as source:
                 logger.info("Listening")
+                # recognizer.adjust_for_ambient_noise(source) 
                 audio = recognizer.listen(source)
 
             logger.info("Finished Recording")
@@ -50,9 +51,9 @@ def getPrompt(language=None, temperature=0):
 
             else:
                 if language is None:
-                    # chatrequest text: We're starting., chatrequest language: polish, transcript text:Zaczynamy.
                     corrected_text, corrected_language = text_generation.startConv_chatRequest(transcript.text)
-                    logger.info(f"chatrequest text: {corrected_text}, chatrequest language: {corrected_language}, transcript text:{transcript.text}")
+                    logger.info(f"corrected text: {corrected_text}, corrected language: {corrected_language}, transcript text:{transcript.text}")
+                    
                     if corrected_language not in ['english', 'arabic']:
                         logger.warning("Transcription failed or language not supported, trying again...")
                         text2speech.convert2speech("Transcription failed or language not supported, trying again...")

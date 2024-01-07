@@ -1,11 +1,9 @@
-from . import main
-from etl import database_methods
-import cv2
-import bson
+from image_processing import image_capturing
+
 
 if __name__ == '__main__':
     # python -m test
-    client_image = main.captureImage()
+    client_image = image_capturing.captureImage()
     # client_id = database.create_client()
     # database.save_image(client_image, client_id)
     # try:
