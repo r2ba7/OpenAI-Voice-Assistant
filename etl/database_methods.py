@@ -49,7 +49,6 @@ def createConv(conv_history, client_id):
             'conversationHistory': conv_history,
             'createdAt': current_time
         }
-
         db.messages.insert_one(chat_document)
         logger.info(f"Created chat history for client: {client_id}.")
 
@@ -62,8 +61,12 @@ def updateConv(conv_history, client_id):
         result = db.messages.update_one(
             {'client_id': client_id},
             {
+                '$push': {
+                    'conversationHistory': {
+                        '$each': conv_history  # Adds each message in the list
+                    },
+                },
                 '$set': {
-                    'conversationHistory': conv_history,
                     'updatedAt': current_time
                 }
             }

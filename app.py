@@ -27,9 +27,10 @@ async def root():
 @app.post("/request_chat")
 def request_assistant():
     start_time = time.time()
-    client_id, conv_history, conv_found, conv_history_instructions = main.clientRecognition()
+    client_id, conv_history, conv_found = main.clientRecognition()
     language = main.startConversationPrompt()
-    
+    current_conv = []
+
     while True:
         user_prompt, _ = speech2text.getPrompt(language) 
         logger.info(f"Transcript: {user_prompt}")
@@ -38,14 +39,14 @@ def request_assistant():
         if exit_flag:
             break
         
-        text, reaction = main.conversationCycle(language=language, user_input=user_prompt, conversation_history=conv_history_instructions)
+        text, reaction = main.conversationCycle(language=language, user_input=user_prompt, conversation_history=conv_history)
 
         if reaction == "other":
-            conv_history.append(f"user:{user_prompt}"); conv_history.append(f"assistant:{text}");
+            current_conv.append((user_prompt, text)); 
             
     is_save = main.saveConversationPrompt(language)
     main.saveConversation(is_save=is_save, conv_found=conv_found,
-                             client_id=client_id, conv_history=conv_history)
+                          client_id=client_id, conv_history=current_conv)
         
     minutes, seconds = divmod(time.time() - start_time, 60)
     print(f"Time it took is: {int(minutes)} minutes and {int(seconds)} seconds")

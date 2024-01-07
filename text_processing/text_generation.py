@@ -9,7 +9,7 @@ from utils import general_utils
 
 logger = general_utils.get_logger(__name__)
 Instructions = general_utils.read_instructions("documents/role.txt")
-
+MAX_CONTEXT_HISTORY = 10
 
 def sync_chatRequest(language, user_input, temperature=0.9, frequency_penalty=0.2, presence_penalty=0, conversation_history=None, Instructions=Instructions):
     
@@ -20,7 +20,9 @@ def sync_chatRequest(language, user_input, temperature=0.9, frequency_penalty=0.
         raise Exception("Instructions not found")
 
     if conversation_history:
-        conversation.append({"role": "system", "content": conversation_history})
+        for user_response, assistant_response in conversation_history[-MAX_CONTEXT_HISTORY:]:
+            conversation.append({ "role": "user", "content": user_response})
+            conversation.append({ "role": "assistant", "content": assistant_response})
 
     conversation.append({"role": "user", "content": user_input})
     completion = sync_client.chat.completions.create(

@@ -33,22 +33,16 @@ def clientRecognition(accuracy_threshold=50):
     """
     client_image = image_capturing.captureImage()
     client_id = client_recognition.getClient(client_image=client_image, accuracy_threshold=accuracy_threshold)
-    conv_history_instructions = None; conv_history = []; conv_found = False;
+    conv_history = []; conv_found = False;
 
     if client_id:
         conv_history, conv_found = database_methods.retrieveHistory(client_id)
-        if conv_found:
-            formatted_conv_history = " ".join(conv_history)
-            conv_history_instructions = (
-                f"Here is a chat conversation between you and the current client:{formatted_conv_history} "
-                "You can use that history to know information about the client, and also you can fetch information from previous chats."
-            )
 
     else:
         client_id = database_methods.createClient()
         database_methods.createImage(client_image, client_id)
 
-    return client_id, conv_history, conv_found, conv_history_instructions
+    return client_id, conv_history, conv_found
 
 
 def say_message(message, language):
