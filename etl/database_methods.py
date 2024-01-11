@@ -61,8 +61,12 @@ def updateConv(conv_history, client_id):
         result = db.messages.update_one(
             {'client_id': client_id},
             {
+                '$push': {
+                    'conversationHistory': {
+                        '$each': conv_history
+                    },
+                },
                 '$set': {
-                    'conversationHistory': conv_history,
                     'updatedAt': current_time
                 }
             }

@@ -1,4 +1,3 @@
-import time
 import string
 
 from etl import database_methods
@@ -92,7 +91,7 @@ def startConversationPrompt():
             continue
 
 
-def conversationCycle(language, user_input, conversation_history):
+def conversationCycle(language, user_input, conv_history):
     def get_language_specific_messages_cycle(language):
         messages = {
             'ar': ("برجاء تكرار المحاوله مره اخرى"),
@@ -101,8 +100,9 @@ def conversationCycle(language, user_input, conversation_history):
         return messages[language]
 
     while True:
-        chat_response, reaction = text_generation.sync_chatRequest(language=language, user_input=user_input, 
-                                                          conversation_history=conversation_history)
+        chat_response, reaction = text_generation.sync_chatRequest(language=language, 
+                                                                   user_input=user_input, 
+                                                                   conv_history=conv_history)
         if chat_response is not None and reaction is not None:
             return chat_response, reaction
         

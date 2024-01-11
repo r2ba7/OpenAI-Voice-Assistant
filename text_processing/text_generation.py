@@ -9,7 +9,7 @@ from utils import general_utils
 
 logger = general_utils.get_logger(__name__)
 Instructions = general_utils.read_instructions("documents/role.txt")
-MAX_CONTEXT_HISTORY = 10
+MAX_CONTEXT_HISTORY = 20
 
 
 def get_moderation(question):
@@ -43,15 +43,14 @@ def get_moderation(question):
     return None
 
 
-def sync_chatRequest(language, user_input, conversation_history=None, Instructions=Instructions, temperature=0.9, frequency_penalty=0.2, presence_penalty=0):
+def sync_chatRequest(language, user_input, conv_history=None, temperature=0.9, frequency_penalty=0.2, presence_penalty=0):
     """
     Generates a chat response using GPT-4 based on user input and conversation history.
 
     Args:
         language (str): The language of the chat.
         user_input (str): The latest user input for the chat.
-        conversation_history (list, optional): History of past user and assistant messages. Default is None.
-        Instructions (str): Set of initial instructions for the chat context.
+        conv_history (list, optional): History of past user and assistant messages. Default is None.
         temperature (float, optional): Controls the randomness of the response. Default is 0.9.
         frequency_penalty (float, optional): Penalizes repetitive responses. Default is 0.2.
         presence_penalty (float, optional): Encourages diverse responses. Default is 0.
@@ -67,15 +66,26 @@ def sync_chatRequest(language, user_input, conversation_history=None, Instructio
         It returns the model's response as text along with a reaction type. If there's an error or if the response
         format is unexpected, it returns None for both values.
     """
-    if Instructions:
-        messages = [{"role": "system", "content": Instructions}]
+    instructions = f'Your name is Rabeh, a Bilingual Sales Assistant. \
+        Match the language of each query with precision: always respond in {language} for {language} queries. \
+        You are an expert in various products, adept at highlighting their benefits and unique features. \
+        For Arabic queries, use Arabic script even for English terms or brand names. \
+        Always match {language} in your response, even if the name of the user or certain words in the prompt are typically associated with another language. \
+        Maintain consistency in {language}, regardless of the name of the user or specific terms used in their query. \
+        Your responses should be concise, informative, and persuasive, tailored to the language of the query without language mixing. \
+        Responses must adhere to a strict format: a JSON with exactly two keys, "text" and "reaction". The "text" key contains your response to the query, \
+        and the "reaction" key categorizes your response sentiment as "greetings", "farewell", or "other". \
+        Ensure that all parts of the response, including any introductory elements, are encapsulated within this dictionary structure, \
+        maintaining the format: {{"text": "your response", "reaction": "response category"}}, \
+        Example response: {{"text": "Hello, my name is Rabeh, how can I help you today?", "reaction": "greetings"}}. \
+        Responses must be no longer than three sentences.'
+    
+    messages = [{"role": "system", "content": instructions}]
 
-    else:
-        raise Exception("Instructions not found")
-
-    if conversation_history:
-        for user_response, assistant_response in conversation_history[-MAX_CONTEXT_HISTORY:]:
-            messages.append({"role": "user", "content": user_response})
+    print
+    if conv_history:
+        for user_prompt, assistant_response in conv_history[-MAX_CONTEXT_HISTORY:]:
+            messages.append({"role": "user", "content": user_prompt})
             messages.append({"role": "assistant", "content": assistant_response})
 
     messages.append({"role": "user", "content": user_input})

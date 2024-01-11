@@ -21,7 +21,7 @@ logger = general_utils.get_logger(__name__)
 
 @app.get("/")
 async def root():
-    return {"message": "Hello World! I'm Rabah, the programmer of Rabeh. | 7/1/2024 - voice assistant - Trial 1."}
+    return {"message": "Hello World! I'm Rabah, the programmer of Rabeh. | 11/1/2024 - voice assistant - Trial 1."}
 
 
 @app.post("/request_chat")
@@ -51,16 +51,13 @@ def request_assistant():
         logger.info(f"Transcript: {user_prompt}")
 
         exit_flag = main.exitConversation(user_prompt=user_prompt)
-        if exit_flag:
-            break
-        
-
+        if exit_flag: break
+    
         assistant_response, reaction = main.conversationCycle(language=language, user_input=user_prompt, 
-                                                              conversation_history=conv_history+current_conv)
-        if reaction == "other":
-            current_conv.append((user_prompt, assistant_response))
+                                                              conv_history=conv_history+current_conv)
         
-        time.sleep(1)
+        if reaction == "other": current_conv.append((user_prompt, assistant_response))
+        # time.sleep(1)
 
     is_save = main.saveConversationPrompt(language)
     main.saveConversation(is_save=is_save, conv_found=conv_found,
@@ -68,4 +65,4 @@ def request_assistant():
         
     minutes, seconds = divmod(time.time() - start_time, 60)
     print(f"Time it took is: {int(minutes)} minutes and {int(seconds)} seconds")
-    return {"conversation": conv_history}
+    return {"conversation": current_conv}

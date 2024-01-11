@@ -58,10 +58,11 @@ def getPrompt(language=None, temperature=0):
                         logger.warning("Transcription failed or language not supported, trying again...")
                         text2speech.convert2speech("Transcription failed or language not supported, trying again...")
                         continue
-
+                        
                     return corrected_text, corrected_language
                 
                 else:
+                    logger.info(transcript.text)
                     return transcript.text, transcript.language
 
         except Exception as e:
