@@ -16,6 +16,7 @@ def get_speech_prompt(q, image_prompts, stop_signal):
             if prompt and any(command.lower() in prompt.strip().lower() for command in image_prompts):
                 q.put(True)
                 break
+
         except Exception as e:
             logger.error(f"Error in speech prompt thread: {str(e)}")
 
@@ -29,13 +30,13 @@ def captureImage():
     stop_signal = threading.Event()
     image_prompts = ['cheese', 'capture', 'photo', 'picture']
     speech_thread = threading.Thread(target=get_speech_prompt, args=(q, image_prompts, stop_signal))
-    speech_thread.start()
-
+    
     image = None
     text2speech.convert2speech("Say: cheese, capture, photo, picture to take picture.")
     time.sleep(1)
 
     try:
+        speech_thread.start()
         while True:
             ret, frame = cap.read()
             if not ret:

@@ -26,11 +26,26 @@ async def root():
 
 @app.post("/request_chat")
 def request_assistant():
+    """
+    Handles the entire cycle of a conversation with an AI assistant.
+
+    Description:
+        This function manages the conversation flow with a user, starting from user recognition and ending with 
+        the option to save the conversation. It continuously captures user input through speech recognition, 
+        processes it, and generates responses using the AI assistant. The function also tracks the duration of 
+        the conversation.
+
+    Returns:
+        dict: A dictionary containing the entire conversation history.
+    
+    Note:
+        The conversation cycle is broken when the user indicates a desire to exit. The function then offers 
+        the option to save the conversation history. The total duration of the conversation is also displayed.
+    """
     start_time = time.time()
     client_id, conv_history, conv_found = main.clientRecognition()
     language = main.startConversationPrompt()
     current_conv = []
-
     while True:
         user_prompt, _ = speech2text.getPrompt(language) 
         logger.info(f"Transcript: {user_prompt}")
@@ -39,11 +54,14 @@ def request_assistant():
         if exit_flag:
             break
         
-        text, reaction = main.conversationCycle(language=language, user_input=user_prompt, conversation_history=conv_history)
 
+        assistant_response, reaction = main.conversationCycle(language=language, user_input=user_prompt, 
+                                                              conversation_history=conv_history+current_conv)
         if reaction == "other":
-            current_conv.append((user_prompt, text)); 
-            
+            current_conv.append((user_prompt, assistant_response))
+        
+        time.sleep(1)
+
     is_save = main.saveConversationPrompt(language)
     main.saveConversation(is_save=is_save, conv_found=conv_found,
                           client_id=client_id, conv_history=current_conv)

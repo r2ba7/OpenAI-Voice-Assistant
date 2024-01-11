@@ -101,10 +101,10 @@ def conversationCycle(language, user_input, conversation_history):
         return messages[language]
 
     while True:
-        text, reaction = text_generation.sync_chatRequest(language=language, user_input=user_input, 
+        chat_response, reaction = text_generation.sync_chatRequest(language=language, user_input=user_input, 
                                                           conversation_history=conversation_history)
-        if text is not  None and reaction is not None:
-            return text, reaction
+        if chat_response is not None and reaction is not None:
+            return chat_response, reaction
         
         else:
             error_message = get_language_specific_messages_cycle(language=language)
